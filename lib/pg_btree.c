@@ -99,7 +99,7 @@ static void BTReaderTerm(BTReader *reader);
 static void BTReaderReadPage(BTReader *reader, BlockNumber blkno);
 static IndexTuple BTReaderGetNextItem(BTReader *reader);
 
-static void _bt_mergebuild(Spooler *self, BTSpool *btspool);
+static bool _bt_mergebuild(Spooler *self, BTSpool *btspool);
 static void _bt_mergeload(Spooler *self, BTWriteState *wstate, BTSpool *btspool,
 						  BTReader *btspool2, Relation heapRel);
 static int compare_indextuple(const IndexTuple itup1, const IndexTuple itup2,
@@ -250,9 +250,8 @@ IndexSpoolEnd(Spooler *self)
 
 	for (i = 0; i < self->relinfo->ri_NumIndices; i++)
 	{
-		if (spools[i] != NULL)
+		if (spools[i] != NULL && _bt_mergebuild(self, spools[i]))
 		{
-			_bt_mergebuild(self, spools[i]);
 			_bt_spooldestroy(spools[i]);
 		}
 		else
@@ -380,7 +379,7 @@ IndexSpoolInsert(BTSpool **spools, TupleTableSlot *slot, ItemPointer tupleid, ES
 }
 
 
-static void
+static bool
 _bt_mergebuild(Spooler *self, BTSpool *btspool)
 {
 	Relation heapRel = self->relinfo->ri_RelationDesc;
@@ -392,6 +391,22 @@ _bt_mergebuild(Spooler *self, BTSpool *btspool)
 
 	tuplesort_performsort(btspool->sortstate);
 
+	{
+#if PG_VERSION_NUM >= 110000
+		TuplesortInstrumentation ti;
+		tuplesort_get_stats(btspool->sortstate, &ti);
+		if (ti.spaceType == SORT_SPACE_TYPE_DISK)
+			return false;
+#else
+		const char* sort_method;
+		const char* space_type;
+		long	space_used;
+		tuplesort_get_stats(btspool->sortstate,
+			&sort_method, &space_type, &space_used);
+		if (space_type[0] == 'D')
+			return false;
+#endif
+	}
 
 #if PG_VERSION_NUM >= 90300
 	/*
@@ -461,6 +476,8 @@ _bt_mergebuild(Spooler *self, BTSpool *btspool)
 	}
 
 	BTReaderTerm(&reader);
+
+	return true;
 }
 
 /*
