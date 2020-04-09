@@ -112,7 +112,7 @@ BufferedWriterClose(BufferedWriter *self, bool onError)
 		if (self->bistate)
 			FreeBulkInsertState(self->bistate);
 
-		SpoolerClose(&self->spooler);
+		SpoolerClose(&self->spooler, (self->base).always_reindex);
 		ret.num_dup_new = self->spooler.dup_new;
 		ret.num_dup_old = self->spooler.dup_old;
 

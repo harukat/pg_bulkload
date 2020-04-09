@@ -324,7 +324,7 @@ DirectWriterClose(DirectWriter *self, bool onError)
 
 	if (!onError)
 	{
-		SpoolerClose(&self->spooler);
+		SpoolerClose(&self->spooler, (self->base).always_reindex);
 		ret.num_dup_new = self->spooler.dup_new;
 		ret.num_dup_old = self->spooler.dup_old;
 

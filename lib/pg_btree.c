@@ -90,7 +90,7 @@ typedef struct BTReader
 } BTReader;
 
 static BTSpool **IndexSpoolBegin(ResultRelInfo *relinfo, bool enforceUnique);
-static void IndexSpoolEnd(Spooler *self);
+static void IndexSpoolEnd(Spooler *self, bool always_reindex);
 static void IndexSpoolInsert(BTSpool **spools, TupleTableSlot *slot, ItemPointer tupleid, EState *estate);
 
 static IndexTuple BTSpoolGetNextItem(BTSpool *spool, IndexTuple itup, bool *should_free);
@@ -154,11 +154,11 @@ SpoolerOpen(Spooler *self,
 }
 
 void
-SpoolerClose(Spooler *self)
+SpoolerClose(Spooler *self, bool always_reindex)
 {
 	/* Merge indexes */
 	if (self->spools != NULL)
-		IndexSpoolEnd(self);
+		IndexSpoolEnd(self, always_reindex);
 
 	/* Terminate spooler. */
 	ExecDropSingleTupleTableSlot(self->slot);
@@ -236,7 +236,7 @@ IndexSpoolBegin(ResultRelInfo *relinfo, bool enforceUnique)
  * IndexSpoolEnd - Flush and delete spools or reindex if not a btree index.
  */
 void
-IndexSpoolEnd(Spooler *self)
+IndexSpoolEnd(Spooler *self, bool always_reindex)
 {
 	BTSpool **spools = self->spools;
 	int				i;
@@ -250,7 +250,8 @@ IndexSpoolEnd(Spooler *self)
 
 	for (i = 0; i < self->relinfo->ri_NumIndices; i++)
 	{
-		if (spools[i] != NULL && _bt_mergebuild(self, spools[i]))
+		if (spools[i] != NULL && (!always_reindex)
+			&& _bt_mergebuild(self, spools[i]))
 		{
 			_bt_spooldestroy(spools[i]);
 		}

@@ -38,7 +38,7 @@ extern void SpoolerOpen(Spooler *self,
 						ON_DUPLICATE on_duplicate,
 						int64 max_dup_errors,
 						const char *dup_badfile);
-extern void SpoolerClose(Spooler *self);
+extern void SpoolerClose(Spooler *self, bool always_reindex);
 extern void SpoolerInsert(Spooler *self, HeapTuple tuple);
 
 #endif   /* BTREE_H */

@@ -62,6 +62,7 @@ struct Writer
 	char		   *dup_badfile;	/* duplicate error file name */
 	char		   *logfile;		/* log file name */
 	bool			multi_process;	/* multi process load? */
+	bool			always_reindex;	/* always reindex? */
 
 	char		   *output;			/**< output file or relation name */
 	Oid				relid;			/**< target relation id */

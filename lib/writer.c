@@ -82,6 +82,10 @@ WriterParam(Writer *self, const char *keyword, char *value)
 	{
 		self->verbose = ParseBoolean(value);
 	}
+	else if (CompareKeyword(keyword, "ALWAYS_REINDEX"))
+	{
+		self->always_reindex = ParseBoolean(value);
+	}
 	else if (!self->param(self, keyword, value))
 		return false;
 
